@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <>
       <section className="container mx-auto flex h-[calc(100vh-250px)] flex-col items-center justify-center px-4 text-center">
-        <h1 className="text-6xl font-bold tracking-tight md:text-8xl text-white drop-shadow-lg">
+        <h1 className="text-6xl font-bold tracking-tight md:text-8xl text-foreground drop-shadow-lg">
           Crafting The
           <br />
           Future Of Motion.
@@ -16,11 +16,11 @@ export default function Home() {
           <Button
             asChild
             variant="ghost"
-            className="group text-white uppercase tracking-widest hover:bg-transparent"
+            className="group text-foreground uppercase tracking-widest hover:bg-transparent"
           >
             <Link href="#featured-work">
               <PlayCircle
-                className="mr-4 h-16 w-16 text-white transition-all duration-300 group-hover:text-primary group-hover:scale-110 group-hover:animate-pulse"
+                className="mr-4 h-16 w-16 text-foreground transition-all duration-300 group-hover:text-primary group-hover:scale-110 group-hover:animate-pulse"
                 style={{ filter: 'drop-shadow(0 0 10px hsl(var(--primary)))' }}
               />
               View Showreel

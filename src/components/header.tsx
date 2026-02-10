@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from './ui/skeleton';
+import { ThemeToggle } from './theme-toggle';
 
 const navLinks = [
   { href: '/#featured-work', label: 'Work', icon: Film },
@@ -45,10 +46,10 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-transparent border-b border-white/10">
+    <header className="sticky top-0 z-50 w-full bg-transparent border-b border-border">
       <div className="container flex h-24 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
-          <span className="font-semibold uppercase tracking-wider text-white text-sm">
+          <span className="font-semibold uppercase tracking-wider text-foreground text-sm">
             Mohtasim Moktadir Tasir - Visual Storyteller / Video Editor
           </span>
         </Link>
@@ -59,7 +60,7 @@ export function Header() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'transition-colors hover:text-primary text-white uppercase tracking-widest text-xs',
+                  'transition-colors hover:text-primary text-foreground uppercase tracking-widest text-xs',
                   pathname === link.href ? 'text-primary font-semibold' : ''
                 )}
               >
@@ -68,13 +69,13 @@ export function Header() {
             ))}
           </nav>
 
-          <div className="hidden md:block">
+          <div className="hidden md:flex items-center gap-2">
             {loading ? (
               <Skeleton className="w-20 h-8" />
             ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="text-white uppercase text-xs">
+                  <Button variant="ghost" className="text-foreground uppercase text-xs">
                     Admin <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -89,16 +90,18 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="ghost" onClick={() => router.push('/login')} className="text-white uppercase text-xs">
+              <Button variant="ghost" onClick={() => router.push('/login')} className="text-foreground uppercase text-xs">
                 Admin Login
               </Button>
             )}
+            <ThemeToggle />
           </div>
 
-          <div className="flex items-center md:hidden">
+          <div className="flex items-center md:hidden gap-2">
+            <ThemeToggle />
             <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white">
+                <Button variant="ghost" size="icon" className="text-foreground">
                   <Menu className="h-6 w-6" />
                   <span className="sr-only">Toggle Menu</span>
                 </Button>

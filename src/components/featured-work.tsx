@@ -68,7 +68,7 @@ export function FeaturedWork() {
                   </div>
                 </CardContent>
                 <CardFooter className="p-2 pt-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-white text-center w-full">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-foreground text-center w-full">
                     {video.title}
                   </h3>
                 </CardFooter>
@@ -77,8 +77,8 @@ export function FeaturedWork() {
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious className="text-white bg-white/10 hover:bg-white/20 border-white/20" />
-      <CarouselNext className="text-white bg-white/10 hover:bg-white/20 border-white/20" />
+      <CarouselPrevious className="text-foreground bg-foreground/10 hover:bg-foreground/20 border-foreground/20" />
+      <CarouselNext className="text-foreground bg-foreground/10 hover:bg-foreground/20 border-foreground/20" />
     </Carousel>
   );
 }
