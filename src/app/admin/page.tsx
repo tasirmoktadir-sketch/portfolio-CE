@@ -168,37 +168,39 @@ export default function AdminPage() {
       const uploadTask = uploadBytesResumable(storageRef, videoFile);
 
       uploadTask.on("state_changed", 
-        (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100),
+        (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(progress);
+        },
         (error) => {
           console.error("Upload failed:", error);
           toast({ variant: "destructive", title: "Upload Error", description: "There was a problem uploading your video." });
           setUploadProgress(null);
           setIsSubmitting(false);
         },
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref)
-            .then((downloadURL) => {
-              const id = doc(collection(firestore, "videoProjects")).id;
-              const docRef = doc(firestore, "videoProjects", id);
-              const videoData = { ...data, videoUrl: downloadURL, storagePath };
-              return setDoc(docRef, videoData).catch(err => {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: videoData }));
-                throw err; // Re-throw to be caught by the outer catch
-              });
-            })
-            .then(() => {
-              toast({ title: "Video Added", description: `"${data.title}" has been saved.` });
-              setVideoDialogOpen(false);
-            })
-            .catch((err) => {
-              console.error("Error during upload finalization:", err);
-              toast({ variant: "destructive", title: "Save Error", description: "There was a problem saving video details after upload." });
-            })
-            .finally(() => {
-              setIsSubmitting(false);
-              setUploadProgress(null);
-              setVideoFile(null);
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            const id = doc(collection(firestore, "videoProjects")).id;
+            const docRef = doc(firestore, "videoProjects", id);
+            const videoData = { ...data, videoUrl: downloadURL, storagePath };
+            
+            await setDoc(docRef, videoData).catch(err => {
+              errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: videoData }));
+              throw err;
             });
+
+            toast({ title: "Video Added", description: `"${data.title}" has been saved.` });
+            setVideoDialogOpen(false);
+
+          } catch (error) {
+             console.error("Error during upload finalization:", error);
+             toast({ variant: "destructive", title: "Save Error", description: "There was a problem saving video details after upload." });
+          } finally {
+             setIsSubmitting(false);
+             setUploadProgress(null);
+             setVideoFile(null);
+          }
         }
       );
     }
@@ -235,7 +237,10 @@ export default function AdminPage() {
       const uploadTask = uploadBytesResumable(storageRef, profileImageFile);
 
       uploadTask.on('state_changed',
-        (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100),
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
         (error) => {
           console.error("Image upload failed:", error);
           toast({ variant: "destructive", title: "Upload Error", description: "Could not upload profile image." });
@@ -440,5 +445,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
