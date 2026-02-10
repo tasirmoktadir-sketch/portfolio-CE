@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { useAuth } from "@/firebase";
+import { useUser, useFirebase } from "@/firebase";
 import { signOut } from "firebase/auth";
 import {
   DropdownMenu,
@@ -29,7 +29,8 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const { auth, user, loading } = useAuth();
+  const { user, loading } = useUser();
+  const { auth } = useFirebase();
 
   const handleLogout = async () => {
     if (!auth) return;

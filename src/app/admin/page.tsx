@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { collection, deleteDoc, doc, setDoc } from "firebase/firestore";
-import { useAuth, useCollection, useFirestore } from "@/firebase";
+import { useUser, useCollection, useFirestore } from "@/firebase";
 import { useRouter } from "next/navigation";
 import {
   Table,
@@ -58,7 +58,7 @@ interface VideoProject extends VideoFormValues {
 }
 
 export default function AdminPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
   const videoProjectsCollection = firestore

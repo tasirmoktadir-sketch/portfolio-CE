@@ -40,4 +40,3 @@ export const FirebaseProvider = ({
 export const useFirebase = () => useContext(FirebaseContext);
 export const useFirebaseApp = () => useContext(FirebaseContext).app;
 export const useFirestore = () => useContext(FirebaseContext).firestore;
-export const useAuth = () => useContext(FirebaseContext);

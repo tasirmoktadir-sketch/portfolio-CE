@@ -1,10 +1,10 @@
 "use client";
-import { Auth, onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
 import { useState, useEffect } from "react";
-import { useAuth as useFirebaseAuth } from "../provider";
+import { useFirebase } from "../provider";
 
 export const useUser = () => {
-  const { auth } = useFirebaseAuth();
+  const { auth } = useFirebase();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,8 +22,5 @@ export const useUser = () => {
     return () => unsubscribe();
   }, [auth]);
 
-  return { user, loading, auth };
+  return { user, loading };
 };
-
-// Main hook for easy access to user, loading state, and auth object
-export const useAuth = useUser;

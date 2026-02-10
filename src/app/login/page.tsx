@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useAuth } from "@/firebase";
+import { useUser, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -26,8 +26,8 @@ const formSchema = z.object({
 });
 
 export default function LoginPage() {
-  const auth = useAuth();
-  const { user, loading } = auth;
+  const { user, loading } = useUser();
+  const { auth } = useFirebase();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -46,14 +46,13 @@ export default function LoginPage() {
   }, [user, loading, router]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth.auth) return;
+    if (!auth) return;
     try {
-      await signInWithEmailAndPassword(auth.auth, values.email, values.password);
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
-      router.push("/admin");
     } catch (error: any) {
       console.error("Login failed:", error);
       toast({
