@@ -54,11 +54,12 @@ export default function LoginPage() {
         description: "Welcome back!",
       });
       router.push("/admin");
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Login failed:", error);
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Invalid email or password.",
+        description: error.message || "An unknown error occurred.",
       });
     }
   }
