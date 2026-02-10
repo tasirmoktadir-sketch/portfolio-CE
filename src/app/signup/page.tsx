@@ -16,17 +16,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import Link from "next/link";
 
 const formSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
-export default function LoginPage() {
+export default function SignupPage() {
   const auth = useAuth();
   const { user, loading } = auth;
   const router = useRouter();
@@ -49,17 +49,21 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth.auth) return;
     try {
-      await signInWithEmailAndPassword(auth.auth, values.email, values.password);
+      await createUserWithEmailAndPassword(auth.auth, values.email, values.password);
       toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+        title: "Account Created",
+        description: "You have been successfully signed up.",
       });
       router.push("/admin");
-    } catch (error) {
+    } catch (error: any) {
+      let description = "An error occurred during sign up.";
+      if (error.code === 'auth/email-already-in-use') {
+        description = "This email is already in use. Please try another one or log in.";
+      }
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: "Invalid email or password.",
+        title: "Sign-up Failed",
+        description: description,
       });
     }
   }
@@ -72,8 +76,8 @@ export default function LoginPage() {
     <div className="container mx-auto flex h-[80vh] items-center justify-center">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Admin Login</CardTitle>
-          <CardDescription>Enter your credentials to access the admin panel.</CardDescription>
+          <CardTitle>Create an Account</CardTitle>
+          <CardDescription>Enter your email and password to sign up.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -105,14 +109,14 @@ export default function LoginPage() {
                 )}
               />
               <Button type="submit" className="w-full">
-                Login
+                Sign Up
               </Button>
             </form>
           </Form>
-          <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="underline">
-              Sign up
+           <div className="mt-4 text-center text-sm">
+            Already have an account?{" "}
+            <Link href="/login" className="underline">
+              Log in
             </Link>
           </div>
         </CardContent>
