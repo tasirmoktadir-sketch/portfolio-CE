@@ -53,7 +53,7 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "Welcome back!",
       });
-      // The useEffect will now handle the redirect once the user state is updated.
+      router.push("/admin");
     } catch (error: any) {
       console.error("Login failed:", error);
       toast({
