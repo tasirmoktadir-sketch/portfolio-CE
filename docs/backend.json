@@ -23,6 +23,65 @@
         }
       },
       "required": ["title", "description", "videoUrl", "storagePath"]
+    },
+    "aboutInfo": {
+      "title": "About Information",
+      "description": "Content for the About Me page.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tagline": {
+          "type": "string"
+        },
+        "bio1": {
+          "type": "string"
+        },
+        "bio2": {
+          "type": "string"
+        },
+        "profileImageUrl": {
+          "type": "string"
+        },
+        "profileImageStoragePath": {
+          "type": "string"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "service": {
+      "title": "Service",
+      "description": "Represents a service offered.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": ["title", "description"]
+    },
+    "testimonial": {
+      "title": "Testimonial",
+      "description": "Represents a client testimonial.",
+      "type": "object",
+      "properties": {
+        "clientName": {
+          "type": "string"
+        },
+        "quote": {
+          "type": "string"
+        }
+      },
+      "required": ["clientName", "quote"]
     }
   },
   "auth": {
@@ -34,6 +93,24 @@
         "$ref": "#/backend/entities/videoProject"
       },
       "description": "Stores all the video projects for the portfolio."
+    },
+    "/siteContent/about": {
+      "schema": {
+        "$ref": "#/backend/entities/aboutInfo"
+      },
+      "description": "Stores the content for the About Me page."
+    },
+    "/services/{serviceId}": {
+      "schema": {
+        "$ref": "#/backend/entities/service"
+      },
+      "description": "Stores the list of services offered."
+    },
+    "/testimonials/{testimonialId}": {
+      "schema": {
+        "$ref": "#/backend/entities/testimonial"
+      },
+      "description": "Stores client testimonials."
     }
   }
 }

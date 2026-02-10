@@ -1,16 +1,25 @@
+"use client";
+
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { useDoc, useFirestore } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const skills = [
-  "Videography", "Cinematography", "Video Editing", "Color Grading",
-  "Directing", "Storytelling", "Adobe Premiere Pro", "DaVinci Resolve",
-  "After Effects", "Motion Graphics", "Drone Operation", "Sound Design"
-];
+type AboutInfo = {
+  name: string;
+  tagline: string;
+  bio1: string;
+  bio2: string;
+  profileImageUrl: string;
+  skills: string[];
+};
 
 export default function AboutPage() {
-  const profileImage = PlaceHolderImages.find(p => p.id === 'profile-picture');
+  const firestore = useFirestore();
+  const aboutDocRef = firestore ? doc(firestore, "siteContent", "about") : null;
+  const { data: aboutInfo, loading } = useDoc<AboutInfo>(aboutDocRef);
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 md:px-6">
@@ -18,37 +27,48 @@ export default function AboutPage() {
         <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
           About Me
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Director, Cinematographer, and Editor.
-        </p>
+        {loading ? (
+           <Skeleton className="h-7 w-1/2 mx-auto mt-4" />
+        ) : (
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+            {aboutInfo?.tagline}
+          </p>
+        )}
       </section>
 
       <section className="mt-12">
         <Card className="overflow-hidden">
           <CardContent className="p-6 md:p-8">
-            <div className="grid items-center gap-8 md:grid-cols-3">
-              <div className="flex justify-center md:col-span-1">
-                {profileImage && (
-                  <Image
-                    src={profileImage.imageUrl}
-                    alt={profileImage.description}
-                    data-ai-hint={profileImage.imageHint}
-                    width={200}
-                    height={200}
-                    className="rounded-full object-cover aspect-square shadow-md"
-                  />
-                )}
+             {loading ? (
+              <div className="grid items-center gap-8 md:grid-cols-3">
+                <div className="flex justify-center md:col-span-1">
+                  <Skeleton className="h-[200px] w-[200px] rounded-full" />
+                </div>
+                <div className="md:col-span-2 space-y-4">
+                  <Skeleton className="h-9 w-3/4" />
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-5 w-full" />
+                   <Skeleton className="h-5 w-4/5" />
+                </div>
               </div>
-              <div className="md:col-span-2 space-y-4">
-                <h2 className="text-3xl font-semibold tracking-tight">Mohtasim Moktadir Tasir</h2>
-                <p className="text-muted-foreground">
-                  I'm a passionate filmmaker with a keen eye for storytelling and visual aesthetics. My journey in the cinematic world has been driven by a desire to capture moments that resonate and tell stories that matter. From directing short films to crafting compelling commercial content, I thrive on the creative process and the collaboration it entails.
-                </p>
-                <p className="text-muted-foreground">
-                  My expertise lies in transforming ideas into visually stunning narratives. I believe that every frame has a purpose, and I meticulously work to ensure that every project I undertake is not just seen, but felt.
-                </p>
+            ) : aboutInfo ? (
+              <div className="grid items-center gap-8 md:grid-cols-3">
+                <div className="flex justify-center md:col-span-1">
+                    <Image
+                      src={aboutInfo.profileImageUrl || 'https://placehold.co/200x200'}
+                      alt={aboutInfo.name}
+                      width={200}
+                      height={200}
+                      className="rounded-full object-cover aspect-square shadow-md"
+                    />
+                </div>
+                <div className="md:col-span-2 space-y-4">
+                  <h2 className="text-3xl font-semibold tracking-tight">{aboutInfo.name}</h2>
+                  <p className="text-muted-foreground">{aboutInfo.bio1}</p>
+                  <p className="text-muted-foreground">{aboutInfo.bio2}</p>
+                </div>
               </div>
-            </div>
+            ) : <p>About information not available.</p>}
           </CardContent>
         </Card>
       </section>
@@ -59,13 +79,19 @@ export default function AboutPage() {
             <CardTitle>My Skillset</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {skills.map(skill => (
-                <Badge key={skill} variant="secondary" className="text-sm cursor-default bg-secondary text-secondary-foreground hover:bg-secondary/80">
-                  {skill}
-                </Badge>
-              ))}
-            </div>
+             {loading ? (
+                <div className="flex flex-wrap gap-2">
+                    {[...Array(12)].map((_, i) => <Skeleton key={i} className="h-6 w-24" />)}
+                </div>
+             ) : (
+                <div className="flex flex-wrap gap-2">
+                  {aboutInfo?.skills?.map(skill => (
+                    <Badge key={skill} variant="secondary" className="text-sm cursor-default bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+             )}
           </CardContent>
         </Card>
       </section>
