@@ -1,4 +1,7 @@
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 const videoProjects = [
   {
@@ -41,39 +44,68 @@ const videoProjects = [
 
 export default function Home() {
   return (
-    <div className="container mx-auto px-4 py-12 md:px-6">
-      <section className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-          Video Gallery
+    <>
+      <section className="container mx-auto max-w-4xl px-4 py-24 text-center">
+        <div className="mb-4 inline-block rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+          Cinematic Edge
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
+          Mohtasim Moktadir Tasir
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          A collection of my recent video projects. Each piece showcases a unique story and visual style.
+        <p className="mt-4 text-xl font-medium text-muted-foreground">
+          Video Editor & Content Creator
         </p>
-      </section>
-
-      <section className="mt-12">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {videoProjects.map((video) => (
-            <Card key={video.id} className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-              <CardContent className="p-0">
-                <div className="aspect-video">
-                  <iframe
-                    className="h-full w-full"
-                    src={`https://www.youtube.com/embed/${video.embedId}`}
-                    title={video.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              </CardContent>
-              <CardHeader>
-                <CardTitle>{video.title}</CardTitle>
-                <CardDescription>{video.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
+        <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+          Creating engaging short-form content and compelling commercials that captivate audiences and elevate brands.
+        </p>
+        <div className="mt-8 flex justify-center gap-4">
+          <Button asChild>
+            <Link href="/contact">
+              Contact Us <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="#featured-work">
+              View Work
+            </Link>
+          </Button>
         </div>
       </section>
-    </div>
+
+      <div id="featured-work" className="container mx-auto px-4 py-12 md:px-6 scroll-m-20">
+        <section className="text-center">
+          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+            Featured Work
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+            A selection of recent projects showcasing commercial ads and social media content.
+          </p>
+        </section>
+
+        <section className="mt-12">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {videoProjects.map((video) => (
+              <Card key={video.id} className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                <CardContent className="p-0">
+                  <div className="aspect-video">
+                    <iframe
+                      className="h-full w-full"
+                      src={`https://www.youtube.com/embed/${video.embedId}`}
+                      title={video.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </CardContent>
+                <CardHeader>
+                  <CardTitle>{video.title}</CardTitle>
+                  <CardDescription>{video.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </section>
+      </div>
+    </>
   );
 }

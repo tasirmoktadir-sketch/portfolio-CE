@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, User, Mail, Menu, Clapperboard } from "lucide-react";
+import { Film, User, Mail, Menu, Briefcase, Star } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 const navLinks = [
-  { href: "/", label: "Gallery", icon: Film },
+  { href: "/", label: "Work", icon: Film },
   { href: "/about", label: "About", icon: User },
+  { href: "/services", label: "Services", icon: Briefcase },
+  { href: "/testimonials", label: "Testimonials", icon: Star },
   { href: "/contact", label: "Contact", icon: Mail },
 ];
 
@@ -20,10 +22,9 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
-        <Link href="/" className="mr-6 flex items-center space-x-2">
-          <Clapperboard className="h-6 w-6 text-primary" />
-          <span className="hidden font-bold sm:inline-block">
+      <div className="container flex h-16 items-center justify-between">
+        <Link href="/" className="flex items-center space-x-2">
+          <span className="font-bold">
             Cinematic Edge
           </span>
         </Link>
@@ -34,14 +35,14 @@ export function Header() {
               href={link.href}
               className={cn(
                 "transition-colors hover:text-primary",
-                pathname === link.href ? "text-primary" : "text-foreground/60"
+                pathname === link.href ? "text-primary font-semibold" : "text-foreground/60"
               )}
             >
               {link.label}
             </Link>
           ))}
         </nav>
-        <div className="flex flex-1 items-center justify-end md:hidden">
+        <div className="flex items-center md:hidden">
           <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -56,7 +57,6 @@ export function Header() {
                   className="mb-8 flex items-center space-x-2"
                   onClick={() => setSheetOpen(false)}
                 >
-                  <Clapperboard className="h-6 w-6 text-primary" />
                   <span className="font-bold">Cinematic Edge</span>
                 </Link>
                 <nav className="flex flex-col space-y-4">
