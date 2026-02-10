@@ -41,7 +41,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push("/admin");
+      router.replace("/admin");
     }
   }, [user, loading, router]);
 
@@ -53,7 +53,7 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "Welcome back!",
       });
-      router.push("/admin");
+      // The useEffect will now handle the redirect once the user state is updated.
     } catch (error: any) {
       console.error("Login failed:", error);
       toast({
@@ -64,7 +64,13 @@ export default function LoginPage() {
     }
   }
 
-  if (loading || user) {
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // If user is already logged in, useEffect will redirect.
+  // If not, and not loading, show the form.
+  if (user) {
     return <div>Loading...</div>;
   }
 
@@ -104,8 +110,8 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Login
+              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Logging in..." : "Login"}
               </Button>
             </form>
           </Form>
