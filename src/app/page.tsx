@@ -12,6 +12,9 @@ export default function Home() {
           <br />
           Future Of Motion.
         </h1>
+        <p className="mt-6 text-2xl md:text-3xl font-semibold text-muted-foreground uppercase tracking-widest">
+          Mohtasim Moktadir Tasir
+        </p>
         <div className="mt-12">
           <Button
             asChild

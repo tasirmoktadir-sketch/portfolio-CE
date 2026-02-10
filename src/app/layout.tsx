@@ -7,9 +7,9 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'Cinematic Edge - Mohtasim Moktadir Tasir',
+  title: 'Cinematic Edge',
   description:
-    'The official portfolio for Mohtasim Moktadir Tasir, showcasing video projects.',
+    'The official portfolio for Mohtasim Moktadir Tasir, a visual storyteller and video editor.',
 };
 
 export default function RootLayout({

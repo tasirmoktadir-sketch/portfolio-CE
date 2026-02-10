@@ -49,8 +49,8 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full bg-transparent border-b border-border">
       <div className="container flex h-24 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
-          <span className="font-semibold uppercase tracking-wider text-foreground text-sm">
-            Mohtasim Moktadir Tasir - Visual Storyteller / Video Editor
+          <span className="font-semibold uppercase tracking-wider text-foreground text-lg text-glow">
+            Cinematic Edge
           </span>
         </Link>
         <div className="flex items-center gap-4">
@@ -117,7 +117,7 @@ export function Header() {
                     onClick={() => setSheetOpen(false)}
                   >
                     <span className="font-bold uppercase">
-                      Mohtasim Moktadir Tasir
+                      Cinematic Edge
                     </span>
                   </Link>
                   <nav className="flex flex-col space-y-4">
