@@ -63,7 +63,7 @@ export function Header() {
 
           <div className="hidden md:block">
             {loading ? <Skeleton className="w-20 h-8" /> : (
-              user ? (
+              user && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost">Admin <ChevronDown className="ml-2 h-4 w-4" /></Button>
@@ -78,10 +78,6 @@ export function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              ) : (
-                <Button asChild variant="ghost">
-                  <Link href="/login">Login</Link>
-                </Button>
               )
             )}
           </div>
@@ -123,14 +119,10 @@ export function Header() {
                   </nav>
                   <div className="mt-8 border-t pt-6">
                   {loading ? <Skeleton className="w-full h-10" /> : (
-                    user ? (
+                    user && (
                       <Button onClick={() => {handleLogout(); setSheetOpen(false);}} className="w-full">
                         <LogOut className="mr-2 h-4 w-4" />
                         Logout
-                      </Button>
-                    ) : (
-                      <Button asChild className="w-full">
-                        <Link href="/login" onClick={() => setSheetOpen(false)}>Login</Link>
                       </Button>
                     )
                   )}
