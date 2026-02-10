@@ -1,12 +1,17 @@
+'use client';
 
-"use client";
-
-import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCollection, useFirestore } from "@/firebase";
-import { collection } from "firebase/firestore";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from 'react';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type VideoProject = {
   id: string;
@@ -22,86 +27,58 @@ export function FeaturedWork() {
     firestore ? collection(firestore, 'videoProjects') : null
   );
 
-  const [selectedCategory, setSelectedCategory] = React.useState('All');
-
-  const categories = React.useMemo(() => {
-    if (!videoProjects) return ['All'];
-    const uniqueCategories = new Set(videoProjects.map(p => p.category).filter(Boolean));
-    return ['All', ...Array.from(uniqueCategories)];
-  }, [videoProjects]);
-
-  const filteredVideos = React.useMemo(() => {
-    if (!videoProjects) return [];
-    if (selectedCategory === 'All') return videoProjects;
-    return videoProjects.filter(video => video.category === selectedCategory);
-  }, [videoProjects, selectedCategory]);
-
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-0">
-                <Skeleton className="h-full w-full aspect-video" />
-            </CardContent>
-            <CardHeader>
-              <Skeleton className="h-6 w-1/2" />
-              <Skeleton className="h-4 w-full mt-2" />
-            </CardHeader>
-          </Card>
+      <div className="flex space-x-8">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="min-w-0 shrink-0 grow-0 basis-1/3">
+            <Skeleton className="h-full w-full aspect-video rounded-lg" />
+            <Skeleton className="h-6 w-3/4 mt-4" />
+          </div>
         ))}
       </div>
     );
   }
 
   return (
-    <>
-      {categories.length > 1 && (
-        <div className="flex justify-center mb-8">
-            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-auto">
-                <TabsList>
-                    {categories.map((category) => (
-                    <TabsTrigger key={category} value={category}>
-                        {category}
-                    </TabsTrigger>
-                    ))}
-                </TabsList>
-            </Tabs>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {filteredVideos.map((video) => (
-          <Card key={video.id} className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-            <CardContent className="p-0">
-              <div className="aspect-video bg-black">
-                <iframe
-                    className="h-full w-full"
-                    src={`https://www.youtube.com/embed/${video.youtubeEmbedId}`}
-                    title={video.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                ></iframe>
-              </div>
-            </CardContent>
-            <CardHeader>
-              <CardTitle>{video.title}</CardTitle>
-              <CardDescription>{video.description}</CardDescription>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
-
-       {(!loading && videoProjects && videoProjects.length > 0 && filteredVideos.length === 0) && (
-          <div className="text-center text-muted-foreground py-12 col-span-full">
-              <p>There are no videos in this category yet.</p>
-          </div>
-       )}
-        {(!loading && (!videoProjects || videoProjects.length === 0)) && (
-            <div className="text-center text-muted-foreground py-12 col-span-full">
-                <p>No videos have been uploaded yet. Check back soon!</p>
+    <Carousel
+      opts={{
+        align: 'start',
+        loop: true,
+      }}
+      className="w-full"
+    >
+      <CarouselContent className="-ml-4">
+        {videoProjects?.map(video => (
+          <CarouselItem
+            key={video.id}
+            className="md:basis-1/2 lg:basis-1/3 pl-4"
+          >
+            <div className="p-1">
+              <Card className="overflow-hidden border-0 bg-transparent shadow-lg shadow-primary/10 hover:shadow-primary/30 transition-shadow duration-300 rounded-lg">
+                <CardContent className="p-0">
+                  <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                    <iframe
+                      className="h-full w-full"
+                      src={`https://www.youtube.com/embed/${video.youtubeEmbedId}`}
+                      title={video.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </CardContent>
+                <CardFooter className="p-2 pt-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-white text-center w-full">
+                    {video.title}
+                  </h3>
+                </CardFooter>
+              </Card>
             </div>
-        )}
-    </>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      <CarouselPrevious className="text-white bg-white/10 hover:bg-white/20 border-white/20" />
+      <CarouselNext className="text-white bg-white/10 hover:bg-white/20 border-white/20" />
+    </Carousel>
   );
 }

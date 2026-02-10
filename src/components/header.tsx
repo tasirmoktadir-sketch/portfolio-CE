@@ -1,28 +1,34 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Film, User, Mail, Menu, Briefcase, Star, LogOut, ChevronDown, LogIn } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { useUser, useFirebase } from "@/firebase";
-import { signOut } from "firebase/auth";
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  Menu,
+  LogOut,
+  ChevronDown,
+  LogIn,
+  User,
+  Mail,
+  Film,
+} from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { useUser, useFirebase } from '@/firebase';
+import { signOut } from 'firebase/auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "./ui/skeleton";
+} from '@/components/ui/dropdown-menu';
+import { Skeleton } from './ui/skeleton';
 
 const navLinks = [
-  { href: "/", label: "Work", icon: Film },
-  { href: "/about", label: "About", icon: User },
-  { href: "/services", label: "Services", icon: Briefcase },
-  { href: "/testimonials", label: "Testimonials", icon: Star },
-  { href: "/contact", label: "Contact", icon: Mail },
+  { href: '/#featured-work', label: 'Work', icon: Film },
+  { href: '/about', label: 'About', icon: User },
+  { href: '/contact', label: 'Contact', icon: Mail },
 ];
 
 export function Header() {
@@ -35,26 +41,26 @@ export function Header() {
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth);
-    router.push("/");
+    router.push('/');
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+    <header className="sticky top-0 z-50 w-full bg-transparent border-b border-white/10">
+      <div className="container flex h-24 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
-          <span className="font-bold">
-            Cinematic Edge
+          <span className="font-semibold uppercase tracking-wider text-white text-sm">
+            Mohtasim Moktadir Tasir - Visual Storyteller / Video Editor
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
-            {navLinks.map((link) => (
+          <nav className="hidden items-center space-x-8 text-sm font-medium md:flex">
+            {navLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "transition-colors hover:text-primary",
-                  pathname === link.href ? "text-primary font-semibold" : "text-foreground/60"
+                  'transition-colors hover:text-primary text-white uppercase tracking-widest text-xs',
+                  pathname === link.href ? 'text-primary font-semibold' : ''
                 )}
               >
                 {link.label}
@@ -68,7 +74,9 @@ export function Header() {
             ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost">Admin <ChevronDown className="ml-2 h-4 w-4" /></Button>
+                  <Button variant="ghost" className="text-white uppercase text-xs">
+                    Admin <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => router.push('/admin')}>
@@ -81,7 +89,7 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="ghost" onClick={() => router.push('/login')}>
+              <Button variant="ghost" onClick={() => router.push('/login')} className="text-white uppercase text-xs">
                 Admin Login
               </Button>
             )}
@@ -90,31 +98,36 @@ export function Header() {
           <div className="flex items-center md:hidden">
             <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="text-white">
                   <Menu className="h-6 w-6" />
                   <span className="sr-only">Toggle Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <SheetContent
+                side="right"
+                className="w-[300px] sm:w-[400px] bg-background border-l-border"
+              >
                 <div className="flex flex-col p-6">
                   <Link
                     href="/"
                     className="mb-8 flex items-center space-x-2"
                     onClick={() => setSheetOpen(false)}
                   >
-                    <span className="font-bold">Cinematic Edge</span>
+                    <span className="font-bold uppercase">
+                      Mohtasim Moktadir Tasir
+                    </span>
                   </Link>
                   <nav className="flex flex-col space-y-4">
-                    {navLinks.map((link) => (
+                    {navLinks.map(link => (
                       <Link
                         key={link.href}
                         href={link.href}
                         onClick={() => setSheetOpen(false)}
                         className={cn(
-                          "flex items-center space-x-2 rounded-md p-2 transition-colors hover:bg-accent hover:text-accent-foreground",
+                          'flex items-center space-x-2 rounded-md p-2 transition-colors hover:bg-accent hover:text-accent-foreground uppercase',
                           pathname === link.href
-                            ? "bg-accent text-accent-foreground"
-                            : "text-foreground"
+                            ? 'bg-accent text-accent-foreground'
+                            : 'text-foreground'
                         )}
                       >
                         <link.icon className="h-5 w-5" />
@@ -123,19 +136,31 @@ export function Header() {
                     ))}
                   </nav>
                   <div className="mt-8 border-t pt-6">
-                  {loading ? (
-                    <Skeleton className="w-full h-10" />
-                  ) : user ? (
-                    <Button onClick={() => {handleLogout(); setSheetOpen(false);}} className="w-full">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </Button>
-                  ) : (
-                    <Button onClick={() => {router.push('/login'); setSheetOpen(false);}} className="w-full">
-                      <LogIn className="mr-2 h-4 w-4" />
-                      Admin Login
-                    </Button>
-                  )}
+                    {loading ? (
+                      <Skeleton className="w-full h-10" />
+                    ) : user ? (
+                      <Button
+                        onClick={() => {
+                          handleLogout();
+                          setSheetOpen(false);
+                        }}
+                        className="w-full uppercase"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => {
+                          router.push('/login');
+                          setSheetOpen(false);
+                        }}
+                        className="w-full uppercase"
+                      >
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Admin Login
+                      </Button>
+                    )}
                   </div>
                 </div>
               </SheetContent>
