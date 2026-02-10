@@ -4,7 +4,7 @@
 import * as React from "react";
 import { collection, deleteDoc, doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import { useUser, useFirestore, useStorage, useCollection, useDoc } from "@/firebase";
+import { useUser, useFirestore, useStorage, useCollection, useDoc, useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ const videoSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
   category: z.string().min(1, "Category is required"),
+  youtubeEmbedId: z.string().min(1, "YouTube Embed ID is required"),
 });
 const aboutSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -53,7 +54,7 @@ type AboutFormValues = z.infer<typeof aboutSchema>;
 type ServiceFormValues = z.infer<typeof serviceSchema>;
 type TestimonialFormValues = z.infer<typeof testimonialSchema>;
 
-interface VideoProject extends VideoFormValues { id: string; videoUrl: string; storagePath: string; }
+interface VideoProject extends VideoFormValues { id: string; }
 interface Service extends ServiceFormValues { id: string; }
 interface Testimonial extends TestimonialFormValues { id: string; }
 interface AboutInfo extends Omit<AboutFormValues, 'skills'> { skills: string[]; profileImageUrl: string; profileImageStoragePath: string; }
@@ -81,7 +82,6 @@ export default function AdminPage() {
 
   const [isVideoDialogOpen, setVideoDialogOpen] = React.useState(false);
   const [editingVideo, setEditingVideo] = React.useState<VideoProject | null>(null);
-  const [videoFile, setVideoFile] = React.useState<File | null>(null);
   
   const [profileImageFile, setProfileImageFile] = React.useState<File | null>(null);
   
@@ -107,10 +107,8 @@ export default function AdminPage() {
     if (editingVideo) {
       videoForm.reset(editingVideo);
     } else {
-      videoForm.reset({ title: "", description: "", category: "" });
+      videoForm.reset({ title: "", description: "", category: "", youtubeEmbedId: "" });
     }
-    setVideoFile(null);
-    setUploadProgress(null);
   }, [editingVideo, videoForm]);
 
   // Effect for about form
@@ -143,72 +141,26 @@ export default function AdminPage() {
 
   // Handlers
   const onVideoSubmit = async (data: VideoFormValues) => {
-    if (!firestore || !storage) return;
+    if (!firestore) return;
     setIsSubmitting(true);
+    const id = editingVideo ? editingVideo.id : doc(collection(firestore, "videoProjects")).id;
+    const ref = doc(firestore, "videoProjects", id);
+    const operation = editingVideo ? 'update' : 'create';
 
-    if (editingVideo) {
-      const ref = doc(firestore, "videoProjects", editingVideo.id);
-      setDoc(ref, data, { merge: true })
-        .then(() => {
-          toast({ title: "Video Updated", description: `"${data.title}" has been saved.` });
-          setVideoDialogOpen(false);
-        })
-        .catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'update', requestResourceData: data })))
-        .finally(() => setIsSubmitting(false));
-    } else {
-      if (!videoFile) {
-        toast({ variant: "destructive", title: "Error", description: "Please select a video file." });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      setUploadProgress(0);
-      const storagePath = `videos/${Date.now()}_${videoFile.name}`;
-      const storageRef = ref(storage, storagePath);
-      const uploadTask = uploadBytesResumable(storageRef, videoFile);
-
-      uploadTask.on("state_changed", 
-        (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setUploadProgress(progress);
-        },
-        (error) => {
-          console.error("Upload failed:", error);
-          toast({ variant: "destructive", title: "Upload Error", description: "There was a problem uploading your video." });
-          setUploadProgress(null);
-          setIsSubmitting(false);
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            const id = doc(collection(firestore, "videoProjects")).id;
-            const docRef = doc(firestore, "videoProjects", id);
-            const videoData = { ...data, videoUrl: downloadURL, storagePath };
-            
-            await setDoc(docRef, videoData).catch(err => {
-              errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: videoData }));
-              throw err;
-            });
-
-            toast({ title: "Video Added", description: `"${data.title}" has been saved.` });
-            setVideoDialogOpen(false);
-
-          } catch (error) {
-             console.error("Error during upload finalization:", error);
-             toast({ variant: "destructive", title: "Save Error", description: "There was a problem saving video details after upload." });
-          } finally {
-             setIsSubmitting(false);
-             setUploadProgress(null);
-             setVideoFile(null);
-          }
-        }
-      );
-    }
+    setDoc(ref, data, { merge: true })
+      .then(() => {
+        toast({ title: `Video ${editingVideo ? "Updated" : "Added"}`, description: `"${data.title}" has been saved.` });
+        setVideoDialogOpen(false);
+      })
+      .catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation, requestResourceData: data })))
+      .finally(() => setIsSubmitting(false));
   };
   
   const onAboutSubmit = async (data: AboutFormValues) => {
     if (!firestore || !storage || !aboutDocRef) return;
     setIsSubmitting(true);
+    setUploadProgress(null);
+
 
     const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
     const currentProfileImageUrl = aboutInfo?.profileImageUrl || "";
@@ -231,7 +183,6 @@ export default function AdminPage() {
     };
 
     if (profileImageFile) {
-      setUploadProgress(0);
       const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
       const storageRef = ref(storage, newStoragePath);
       const uploadTask = uploadBytesResumable(storageRef, profileImageFile);
@@ -297,10 +248,11 @@ export default function AdminPage() {
   };
 
   const handleDelete = async (collectionName: string, item: { id: string; title?: string; clientName?: string; storagePath?: string; }) => {
-    if (!firestore || !storage) return;
+    if (!firestore) return;
 
-    if (item.storagePath) { // For videos
-      deleteObject(ref(storage, item.storagePath)).catch(err => console.error("Error deleting from storage: ", err));
+    if (collectionName === 'videoProjects' && item.storagePath) {
+        if (!storage) return;
+        deleteObject(ref(storage, item.storagePath)).catch(err => console.error("Error deleting from storage: ", err));
     }
     
     const docRef = doc(firestore, collectionName, item.id);
@@ -335,11 +287,10 @@ export default function AdminPage() {
                     <Input {...videoForm.register("title")} placeholder="Title" />
                     <Input {...videoForm.register("description")} placeholder="Description" />
                     <Input {...videoForm.register("category")} placeholder="Category (e.g. Commercial)" />
-                    {!editingVideo && <Input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files?.[0] || null)} />}
-                    {isSubmitting && uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
+                    <Input {...videoForm.register("youtubeEmbedId")} placeholder="YouTube Video ID (e.g. dQw4w9WgXcQ)" />
                     <DialogFooter>
                       <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && uploadProgress !== null ? `Uploading ${Math.round(uploadProgress)}%` : 'Save'}
+                        {isSubmitting ? 'Saving...' : 'Save'}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -350,7 +301,7 @@ export default function AdminPage() {
               <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Category</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
               <TableBody>
                 {videoLoading && [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)}
-                {videoProjects?.map((video) => (<TableRow key={video.id}><TableCell>{video.title}</TableCell><TableCell>{video.category}</TableCell><TableCell>{video.description}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setEditingVideo(video)}><Edit /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="text-destructive"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader><AlertDialogDescription>This will permanently delete "{video.title}".</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete('videoProjects', video)}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}
+                {videoProjects?.map((video) => (<TableRow key={video.id}><TableCell>{video.title}</TableCell><TableCell>{video.category}</TableCell><TableCell>{video.description}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => { setEditingVideo(video); setVideoDialogOpen(true);}}><Edit /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="text-destructive"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader><AlertDialogDescription>This will permanently delete "{video.title}".</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete('videoProjects', video)}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}
               </TableBody>
             </Table></CardContent>
           </Card>
@@ -369,9 +320,9 @@ export default function AdminPage() {
                 <div><Label>Bio Paragraph 2</Label><Textarea {...aboutForm.register("bio2")} /></div>
                 <div><Label>Skills (comma-separated)</Label><Textarea {...aboutForm.register("skills")} /></div>
                 <div><Label>Profile Picture</Label><Input type="file" accept="image/*" onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)} /></div>
-                {isSubmitting && uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
+                {isSubmitting && uploadProgress !== null && <Progress value={uploadProgress} className="w-full" />}
                 <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (uploadProgress !== null ? `Uploading ${Math.round(uploadProgress)}%` : 'Saving...') : 'Save About Info'}
+                    {isSubmitting ? (uploadProgress !== null ? `Uploading ${Math.round(uploadProgress!)}%` : 'Saving...') : 'Save About Info'}
                 </Button>
               </form>
               )}
@@ -404,7 +355,7 @@ export default function AdminPage() {
               <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
               <TableBody>
                 {servicesLoading && [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={3}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)}
-                {services?.map((service) => (<TableRow key={service.id}><TableCell>{service.title}</TableCell><TableCell>{service.description}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setEditingService(service)}><Edit /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="text-destructive"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader><AlertDialogDescription>This will permanently delete "{service.title}".</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete('services', service)}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}
+                {services?.map((service) => (<TableRow key={service.id}><TableCell>{service.title}</TableCell><TableCell>{service.description}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => { setEditingService(service); setServiceDialogOpen(true);}}><Edit /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="text-destructive"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader><AlertDialogDescription>This will permanently delete "{service.title}".</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete('services', service)}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}
               </TableBody>
             </Table></CardContent>
           </Card>
@@ -435,7 +386,7 @@ export default function AdminPage() {
               <TableHeader><TableRow><TableHead>Client</TableHead><TableHead>Quote</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
               <TableBody>
                 {testimonialsLoading && [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={3}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)}
-                {testimonials?.map((testimonial) => (<TableRow key={testimonial.id}><TableCell>{testimonial.clientName}</TableCell><TableCell>{testimonial.quote}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setEditingTestimonial(testimonial)}><Edit /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="text-destructive"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader><AlertDialogDescription>This will permanently delete the testimonial from "{testimonial.clientName}".</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete('testimonials', testimonial)}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}
+                {testimonials?.map((testimonial) => (<TableRow key={testimonial.id}><TableCell>{testimonial.clientName}</TableCell><TableCell>{testimonial.quote}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => { setEditingTestimonial(testimonial); setTestimonialDialogOpen(true); }}><Edit /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="text-destructive"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader><AlertDialogDescription>This will permanently delete the testimonial from "{testimonial.clientName}".</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete('testimonials', testimonial)}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}
               </TableBody>
             </Table></CardContent>
           </Card>

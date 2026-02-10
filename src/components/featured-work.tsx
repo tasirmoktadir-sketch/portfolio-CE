@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -11,8 +12,7 @@ type VideoProject = {
   id: string;
   title: string;
   description: string;
-  videoUrl: string;
-  storagePath: string;
+  youtubeEmbedId: string;
   category: string;
 };
 
@@ -75,14 +75,13 @@ export function FeaturedWork() {
           <Card key={video.id} className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
             <CardContent className="p-0">
               <div className="aspect-video bg-black">
-                <video
-                  className="h-full w-full"
-                  src={video.videoUrl}
-                  controls
-                  playsInline
-                >
-                  Your browser does not support the video tag.
-                </video>
+                <iframe
+                    className="h-full w-full"
+                    src={`https://www.youtube.com/embed/${video.youtubeEmbedId}`}
+                    title={video.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                ></iframe>
               </div>
             </CardContent>
             <CardHeader>
