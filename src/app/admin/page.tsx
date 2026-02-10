@@ -38,10 +38,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlusCircle, Edit, Trash2, Film, Eye, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const videoSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -159,115 +161,167 @@ export default function AdminPage() {
     }
   };
 
-  if (authLoading || dataLoading || !user) {
-    return <div>Loading...</div>;
+  if (authLoading || !user) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 
   return (
     <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Admin Panel</h1>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Video
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingVideo ? "Edit Video" : "Add New Video"}
-              </DialogTitle>
-              <DialogDescription>
-                Fill in the details for the video project.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" {...register("title")} />
-                {errors.title && (
-                  <p className="text-sm text-destructive">{errors.title.message}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Input id="description" {...register("description")} />
-                {errors.description && (
-                  <p className="text-sm text-destructive">
-                    {errors.description.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="embedId">YouTube Embed ID</Label>
-                <Input id="embedId" {...register("embedId")} />
-                {errors.embedId && (
-                  <p className="text-sm text-destructive">
-                    {errors.embedId.message}
-                  </p>
-                )}
-              </div>
-              <DialogFooter>
-                <Button type="submit">Save</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Videos</CardTitle>
+            <Film className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {dataLoading ? (
+                <Skeleton className="h-8 w-1/4" />
+              ) : (
+                videoProjects?.length ?? 0
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Views</CardTitle>
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">12,345</div>
+            <p className="text-xs text-muted-foreground">Placeholder data</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Contact Inquiries</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">5</div>
+            <p className="text-xs text-muted-foreground">Placeholder data</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {videoProjects?.map((video) => (
-              <TableRow key={video.id}>
-                <TableCell>{video.title}</TableCell>
-                <TableCell>{video.description}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setEditingVideo(video)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-destructive" />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Video Projects</CardTitle>
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Video
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingVideo ? "Edit Video" : "Add New Video"}
+                </DialogTitle>
+                <DialogDescription>
+                  Fill in the details for the video project.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Title</Label>
+                  <Input id="title" {...register("title")} />
+                  {errors.title && (
+                    <p className="text-sm text-destructive">{errors.title.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Input id="description" {...register("description")} />
+                  {errors.description && (
+                    <p className="text-sm text-destructive">
+                      {errors.description.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="embedId">YouTube Embed ID</Label>
+                  <Input id="embedId" {...register("embedId")} />
+                  {errors.embedId && (
+                    <p className="text-sm text-destructive">
+                      {errors.embedId.message}
+                    </p>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button type="submit">Save</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dataLoading && (
+                  [...Array(3)].map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-20 inline-block" /></TableCell>
+                    </TableRow>
+                  ))
+                )}
+                {videoProjects?.map((video) => (
+                  <TableRow key={video.id}>
+                    <TableCell>{video.title}</TableCell>
+                    <TableCell>{video.description}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditingVideo(video)}
+                      >
+                        <Edit className="h-4 w-4" />
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently
-                          delete the video "{video.title}".
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDelete(video.id, video.title)}
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently
+                              delete the video "{video.title}".
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(video.id, video.title)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
