@@ -114,9 +114,15 @@ export function FeaturedWork() {
 
   return (
     <Tabs defaultValue="all" className="w-full">
-      <TabsList className="grid w-full grid-cols-3 md:w-1/2 lg:w-1/3 mx-auto">
+      <TabsList className="mx-auto mb-8 flex max-w-full flex-wrap justify-center gap-1 rounded-full border border-primary/20 bg-background/50 p-1 neon-glow">
          {categories.map(category => (
-            <TabsTrigger key={category} value={category} className="capitalize">{category}</TabsTrigger>
+            <TabsTrigger 
+              key={category} 
+              value={category} 
+              className="capitalize px-4 py-1.5 text-sm tracking-wider transition-colors duration-300 rounded-full text-muted-foreground hover:text-foreground data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-none"
+            >
+              {category}
+            </TabsTrigger>
          ))}
       </TabsList>
         {categories.map(category => (
