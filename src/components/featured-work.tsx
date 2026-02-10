@@ -70,7 +70,7 @@ function VideoCarousel({ category }: { category: string }) {
                   <div className="aspect-[9/16] bg-black rounded-lg overflow-hidden">
                     <iframe
                       className="h-full w-full"
-                      src={`https://www.youtube.com/embed/${video.youtubeEmbedId}`}
+                      src={`https://www.youtube.com/embed/${video.youtubeEmbedId}?controls=0&rel=0`}
                       title={video.title}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
