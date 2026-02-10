@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import videoProjects from "@/lib/video-projects.json";
+import { FeaturedWork } from "@/components/featured-work";
 
 export default function Home() {
   return (
@@ -45,27 +44,7 @@ export default function Home() {
         </section>
 
         <section className="mt-12">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {videoProjects.map((video) => (
-              <Card key={video.id} className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                <CardContent className="p-0">
-                  <div className="aspect-video">
-                    <iframe
-                      className="h-full w-full"
-                      src={`https://www.youtube.com/embed/${video.embedId}`}
-                      title={video.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
-                  </div>
-                </CardContent>
-                <CardHeader>
-                  <CardTitle>{video.title}</CardTitle>
-                  <CardDescription>{video.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
+          <FeaturedWork />
         </section>
       </div>
     </>

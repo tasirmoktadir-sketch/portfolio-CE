@@ -1,0 +1,35 @@
+{
+  "entities": {
+    "videoProject": {
+      "title": "Video Project",
+      "description": "Represents a video project in the portfolio.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the video."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short description of the video."
+        },
+        "embedId": {
+          "type": "string",
+          "description": "The YouTube embed ID of the video."
+        }
+      },
+      "required": ["title", "description", "embedId"]
+    }
+  },
+  "auth": {
+    "providers": ["email-password"]
+  },
+  "firestore": {
+    "/videoProjects/{videoProjectId}": {
+      "schema": {
+        "$ref": "#/backend/entities/videoProject"
+      },
+      "description": "Stores all the video projects for the portfolio."
+    }
+  }
+}
