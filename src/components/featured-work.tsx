@@ -9,7 +9,8 @@ type VideoProject = {
   id: string;
   title: string;
   description: string;
-  embedId: string;
+  videoUrl: string;
+  storagePath: string;
 };
 
 export function FeaturedWork() {
@@ -41,14 +42,14 @@ export function FeaturedWork() {
       {videoProjects?.map((video) => (
         <Card key={video.id} className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
           <CardContent className="p-0">
-            <div className="aspect-video">
-              <iframe
+            <div className="aspect-video bg-black">
+              <video
                 className="h-full w-full"
-                src={`https://www.youtube.com/embed/${video.embedId}`}
-                title={video.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
+                src={video.videoUrl}
+                controls
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           </CardContent>
           <CardHeader>

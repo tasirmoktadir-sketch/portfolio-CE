@@ -13,12 +13,16 @@
           "type": "string",
           "description": "A short description of the video."
         },
-        "embedId": {
+        "videoUrl": {
           "type": "string",
-          "description": "The YouTube embed ID of the video."
+          "description": "The public URL of the uploaded video file."
+        },
+        "storagePath": {
+          "type": "string",
+          "description": "The path to the video file in Firebase Storage."
         }
       },
-      "required": ["title", "description", "embedId"]
+      "required": ["title", "description", "videoUrl", "storagePath"]
     }
   },
   "auth": {
