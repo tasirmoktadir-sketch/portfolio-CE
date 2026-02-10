@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -17,7 +18,7 @@ import * as z from "zod";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, Edit, Trash2, Film, User as UserIcon, Briefcase, Star, Eye, MessageSquare } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Film, User as UserIcon, Briefcase, Star } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -75,10 +76,13 @@ export default function AdminPage() {
   const { data: aboutInfo, loading: aboutLoading } = useDoc<AboutInfo>(aboutDocRef);
 
   // State
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
+
   const [isVideoDialogOpen, setVideoDialogOpen] = React.useState(false);
   const [editingVideo, setEditingVideo] = React.useState<VideoProject | null>(null);
-  const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
   const [videoFile, setVideoFile] = React.useState<File | null>(null);
+  
   const [profileImageFile, setProfileImageFile] = React.useState<File | null>(null);
   
   const [isServiceDialogOpen, setServiceDialogOpen] = React.useState(false);
@@ -102,7 +106,6 @@ export default function AdminPage() {
   React.useEffect(() => {
     if (editingVideo) {
       videoForm.reset(editingVideo);
-      setVideoDialogOpen(true);
     } else {
       videoForm.reset({ title: "", description: "", category: "" });
     }
@@ -124,7 +127,6 @@ export default function AdminPage() {
   React.useEffect(() => {
     if (editingService) {
       serviceForm.reset(editingService);
-      setServiceDialogOpen(true);
     } else {
       serviceForm.reset({ title: "", description: "" });
     }
@@ -134,7 +136,6 @@ export default function AdminPage() {
   React.useEffect(() => {
     if (editingTestimonial) {
       testimonialForm.reset(editingTestimonial);
-      setTestimonialDialogOpen(true);
     } else {
       testimonialForm.reset({ clientName: "", quote: "" });
     }
@@ -143,32 +144,61 @@ export default function AdminPage() {
   // Handlers
   const onVideoSubmit = async (data: VideoFormValues) => {
     if (!firestore || !storage) return;
+    setIsSubmitting(true);
 
     if (editingVideo) {
       const ref = doc(firestore, "videoProjects", editingVideo.id);
-      setDoc(ref, data, { merge: true }).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'update', requestResourceData: data })));
-      toast({ title: "Video Updated", description: `"${data.title}" has been saved.` });
-      setVideoDialogOpen(false);
+      setDoc(ref, data, { merge: true })
+        .then(() => {
+          toast({ title: "Video Updated", description: `"${data.title}" has been saved.` });
+          setVideoDialogOpen(false);
+        })
+        .catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation: 'update', requestResourceData: data })))
+        .finally(() => setIsSubmitting(false));
     } else {
-      if (!videoFile) return toast({ variant: "destructive", title: "Error", description: "Please select a video file." });
+      if (!videoFile) {
+        toast({ variant: "destructive", title: "Error", description: "Please select a video file." });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      setUploadProgress(0);
       const storagePath = `videos/${Date.now()}_${videoFile.name}`;
       const storageRef = ref(storage, storagePath);
       const uploadTask = uploadBytesResumable(storageRef, videoFile);
-      uploadTask.on("state_changed", (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100),
+
+      uploadTask.on("state_changed", 
+        (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100),
         (error) => {
           console.error("Upload failed:", error);
           toast({ variant: "destructive", title: "Upload Error", description: "There was a problem uploading your video." });
           setUploadProgress(null);
+          setIsSubmitting(false);
         },
         () => {
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            const id = doc(collection(firestore, "videoProjects")).id;
-            const docRef = doc(firestore, "videoProjects", id);
-            const videoData = { ...data, videoUrl: downloadURL, storagePath: storagePath };
-            setDoc(docRef, videoData).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: videoData })));
-            toast({ title: "Video Added", description: `"${data.title}" has been saved.` });
-            setVideoDialogOpen(false);
-          });
+          getDownloadURL(uploadTask.snapshot.ref)
+            .then((downloadURL) => {
+              const id = doc(collection(firestore, "videoProjects")).id;
+              const docRef = doc(firestore, "videoProjects", id);
+              const videoData = { ...data, videoUrl: downloadURL, storagePath };
+              return setDoc(docRef, videoData).catch(err => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'create', requestResourceData: videoData }));
+                throw err; // Re-throw to be caught by the outer catch
+              });
+            })
+            .then(() => {
+              toast({ title: "Video Added", description: `"${data.title}" has been saved.` });
+              setVideoDialogOpen(false);
+            })
+            .catch((err) => {
+              console.error("Error during upload finalization:", err);
+              toast({ variant: "destructive", title: "Save Error", description: "There was a problem saving video details after upload." });
+            })
+            .finally(() => {
+              setIsSubmitting(false);
+              setUploadProgress(null);
+              setVideoFile(null);
+            });
         }
       );
     }
@@ -176,59 +206,89 @@ export default function AdminPage() {
   
   const onAboutSubmit = async (data: AboutFormValues) => {
     if (!firestore || !storage || !aboutDocRef) return;
-    setUploadProgress(0);
+    setIsSubmitting(true);
 
     const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
-    let profileImageUrl = aboutInfo?.profileImageUrl || "";
-    let profileImageStoragePath = aboutInfo?.profileImageStoragePath || "";
+    const currentProfileImageUrl = aboutInfo?.profileImageUrl || "";
+    const currentProfileImageStoragePath = aboutInfo?.profileImageStoragePath || "";
+
+    const saveData = (imageUrl: string, storagePath: string) => {
+      const aboutData = { ...data, skills: skillsArray, profileImageUrl: imageUrl, profileImageStoragePath: storagePath };
+      setDoc(aboutDocRef, aboutData, { merge: true })
+        .then(() => {
+          toast({ title: "About Info Updated", description: "Your information has been saved." });
+        })
+        .catch(err => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: aboutData }));
+        })
+        .finally(() => {
+          setIsSubmitting(false);
+          setUploadProgress(null);
+          setProfileImageFile(null);
+        });
+    };
 
     if (profileImageFile) {
-        profileImageStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
-        const storageRef = ref(storage, profileImageStoragePath);
-        const uploadTask = uploadBytesResumable(storageRef, profileImageFile);
+      setUploadProgress(0);
+      const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
+      const storageRef = ref(storage, newStoragePath);
+      const uploadTask = uploadBytesResumable(storageRef, profileImageFile);
 
-        await new Promise<void>((resolve, reject) => {
-            uploadTask.on('state_changed',
-                (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100),
-                (error) => {
-                    console.error("Image upload failed:", error);
-                    toast({ variant: "destructive", title: "Upload Error", description: "Could not upload profile image." });
-                    setUploadProgress(null);
-                    reject(error);
-                },
-                async () => {
-                    profileImageUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                    resolve();
-                }
-            );
-        });
+      uploadTask.on('state_changed',
+        (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100),
+        (error) => {
+          console.error("Image upload failed:", error);
+          toast({ variant: "destructive", title: "Upload Error", description: "Could not upload profile image." });
+          setIsSubmitting(false);
+          setUploadProgress(null);
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            if (currentProfileImageStoragePath) {
+              deleteObject(ref(storage, currentProfileImageStoragePath)).catch(err => console.error("Could not delete old profile image", err));
+            }
+            saveData(downloadURL, newStoragePath);
+          } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Could not get image URL after upload." });
+            setIsSubmitting(false);
+            setUploadProgress(null);
+          }
+        }
+      );
+    } else {
+      saveData(currentProfileImageUrl, currentProfileImageStoragePath);
     }
-
-    const aboutData = { ...data, skills: skillsArray, profileImageUrl, profileImageStoragePath };
-    setDoc(aboutDocRef, aboutData, { merge: true }).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: aboutData })));
-    toast({ title: "About Info Updated", description: "Your information has been saved." });
-    setUploadProgress(null);
-    setProfileImageFile(null);
   };
   
   const onServiceSubmit = async (data: ServiceFormValues) => {
       if (!firestore) return;
+      setIsSubmitting(true);
       const id = editingService ? editingService.id : doc(collection(firestore, "services")).id;
       const ref = doc(firestore, "services", id);
       const operation = editingService ? 'update' : 'create';
-      setDoc(ref, data, { merge: true }).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation, requestResourceData: data })));
-      toast({ title: `Service ${editingService ? 'Updated' : 'Added'}`, description: `"${data.title}" has been saved.` });
-      setServiceDialogOpen(false);
+      setDoc(ref, data, { merge: true })
+        .then(() => {
+            toast({ title: `Service ${editingService ? 'Updated' : 'Added'}`, description: `"${data.title}" has been saved.` });
+            setServiceDialogOpen(false);
+        })
+        .catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation, requestResourceData: data })))
+        .finally(() => setIsSubmitting(false));
   };
   
   const onTestimonialSubmit = async (data: TestimonialFormValues) => {
       if (!firestore) return;
+      setIsSubmitting(true);
       const id = editingTestimonial ? editingTestimonial.id : doc(collection(firestore, "testimonials")).id;
       const ref = doc(firestore, "testimonials", id);
       const operation = editingTestimonial ? 'update' : 'create';
-      setDoc(ref, data, { merge: true }).catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation, requestResourceData: data })));
-      toast({ title: `Testimonial ${editingTestimonial ? 'Updated' : 'Added'}`, description: `From "${data.clientName}" has been saved.` });
-      setTestimonialDialogOpen(false);
+      setDoc(ref, data, { merge: true })
+        .then(() => {
+            toast({ title: `Testimonial ${editingTestimonial ? 'Updated' : 'Added'}`, description: `From "${data.clientName}" has been saved.` });
+            setTestimonialDialogOpen(false);
+        })
+        .catch(err => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: ref.path, operation, requestResourceData: data })))
+        .finally(() => setIsSubmitting(false));
   };
 
   const handleDelete = async (collectionName: string, item: { id: string; title?: string; clientName?: string; storagePath?: string; }) => {
@@ -271,8 +331,12 @@ export default function AdminPage() {
                     <Input {...videoForm.register("description")} placeholder="Description" />
                     <Input {...videoForm.register("category")} placeholder="Category (e.g. Commercial)" />
                     {!editingVideo && <Input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files?.[0] || null)} />}
-                    {uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
-                    <DialogFooter><Button type="submit" disabled={uploadProgress !== null && uploadProgress < 100}>{uploadProgress !== null ? `Uploading...` : "Save"}</Button></DialogFooter>
+                    {isSubmitting && uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
+                    <DialogFooter>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && uploadProgress !== null ? `Uploading ${Math.round(uploadProgress)}%` : 'Save'}
+                      </Button>
+                    </DialogFooter>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -300,8 +364,10 @@ export default function AdminPage() {
                 <div><Label>Bio Paragraph 2</Label><Textarea {...aboutForm.register("bio2")} /></div>
                 <div><Label>Skills (comma-separated)</Label><Textarea {...aboutForm.register("skills")} /></div>
                 <div><Label>Profile Picture</Label><Input type="file" accept="image/*" onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)} /></div>
-                {uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
-                <Button type="submit" disabled={uploadProgress !== null && uploadProgress > 0 && uploadProgress < 100}>{uploadProgress !== null && uploadProgress < 100 ? `Uploading...` : "Save About Info"}</Button>
+                {isSubmitting && uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
+                <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (uploadProgress !== null ? `Uploading ${Math.round(uploadProgress)}%` : 'Saving...') : 'Save About Info'}
+                </Button>
               </form>
               )}
             </CardContent>
@@ -320,7 +386,11 @@ export default function AdminPage() {
                   <form onSubmit={serviceForm.handleSubmit(onServiceSubmit)} className="space-y-4">
                     <Input {...serviceForm.register("title")} placeholder="Service Title" />
                     <Textarea {...serviceForm.register("description")} placeholder="Service Description" />
-                    <DialogFooter><Button type="submit">Save</Button></DialogFooter>
+                    <DialogFooter>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? 'Saving...' : 'Save'}
+                      </Button>
+                    </DialogFooter>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -347,7 +417,11 @@ export default function AdminPage() {
                   <form onSubmit={testimonialForm.handleSubmit(onTestimonialSubmit)} className="space-y-4">
                     <Input {...testimonialForm.register("clientName")} placeholder="Client Name" />
                     <Textarea {...testimonialForm.register("quote")} placeholder="Client's quote..." />
-                    <DialogFooter><Button type="submit">Save</Button></DialogFooter>
+                    <DialogFooter>
+                      <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? 'Saving...' : 'Save'}
+                      </Button>
+                    </DialogFooter>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -366,3 +440,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
