@@ -28,6 +28,7 @@ import { Progress } from "@/components/ui/progress";
 const videoSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
+  category: z.string().min(1, "Category is required"),
 });
 const aboutSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -103,7 +104,7 @@ export default function AdminPage() {
       videoForm.reset(editingVideo);
       setVideoDialogOpen(true);
     } else {
-      videoForm.reset({ title: "", description: "" });
+      videoForm.reset({ title: "", description: "", category: "" });
     }
     setVideoFile(null);
     setUploadProgress(null);
@@ -268,6 +269,7 @@ export default function AdminPage() {
                   <form onSubmit={videoForm.handleSubmit(onVideoSubmit)} className="space-y-4">
                     <Input {...videoForm.register("title")} placeholder="Title" />
                     <Input {...videoForm.register("description")} placeholder="Description" />
+                    <Input {...videoForm.register("category")} placeholder="Category (e.g. Commercial)" />
                     {!editingVideo && <Input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files?.[0] || null)} />}
                     {uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
                     <DialogFooter><Button type="submit" disabled={uploadProgress !== null && uploadProgress < 100}>{uploadProgress !== null ? `Uploading...` : "Save"}</Button></DialogFooter>
@@ -276,10 +278,10 @@ export default function AdminPage() {
               </Dialog>
             </CardHeader>
             <CardContent><Table>
-              <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Category</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
               <TableBody>
-                {videoLoading && [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={3}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)}
-                {videoProjects?.map((video) => (<TableRow key={video.id}><TableCell>{video.title}</TableCell><TableCell>{video.description}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setEditingVideo(video)}><Edit /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="text-destructive"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader><AlertDialogDescription>This will permanently delete "{video.title}".</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete('videoProjects', video)}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}
+                {videoLoading && [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)}
+                {videoProjects?.map((video) => (<TableRow key={video.id}><TableCell>{video.title}</TableCell><TableCell>{video.category}</TableCell><TableCell>{video.description}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => setEditingVideo(video)}><Edit /></Button><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="text-destructive"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle></AlertDialogHeader><AlertDialogDescription>This will permanently delete "{video.title}".</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete('videoProjects', video)}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}
               </TableBody>
             </Table></CardContent>
           </Card>

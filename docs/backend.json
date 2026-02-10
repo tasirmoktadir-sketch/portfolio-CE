@@ -20,9 +20,19 @@
         "storagePath": {
           "type": "string",
           "description": "The path to the video file in Firebase Storage."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the video project."
         }
       },
-      "required": ["title", "description", "videoUrl", "storagePath"]
+      "required": [
+        "title",
+        "description",
+        "videoUrl",
+        "storagePath",
+        "category"
+      ]
     },
     "aboutInfo": {
       "title": "About Information",
