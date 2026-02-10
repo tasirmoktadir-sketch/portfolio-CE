@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Film, User, Mail, Menu, Briefcase, Star, LogOut, ChevronDown } from "lucide-react";
+import { Film, User, Mail, Menu, Briefcase, Star, LogOut, ChevronDown, LogIn } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -62,23 +62,27 @@ export function Header() {
           </nav>
 
           <div className="hidden md:block">
-            {loading ? <Skeleton className="w-20 h-8" /> : (
-              user && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost">Admin <ChevronDown className="ml-2 h-4 w-4" /></Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => router.push('/admin')}>
-                      Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )
+            {loading ? (
+              <Skeleton className="w-20 h-8" />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost">Admin <ChevronDown className="ml-2 h-4 w-4" /></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => router.push('/admin')}>
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="ghost" onClick={() => router.push('/login')}>
+                Admin Login
+              </Button>
             )}
           </div>
 
@@ -118,13 +122,18 @@ export function Header() {
                     ))}
                   </nav>
                   <div className="mt-8 border-t pt-6">
-                  {loading ? <Skeleton className="w-full h-10" /> : (
-                    user && (
-                      <Button onClick={() => {handleLogout(); setSheetOpen(false);}} className="w-full">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                      </Button>
-                    )
+                  {loading ? (
+                    <Skeleton className="w-full h-10" />
+                  ) : user ? (
+                    <Button onClick={() => {handleLogout(); setSheetOpen(false);}} className="w-full">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </Button>
+                  ) : (
+                    <Button onClick={() => {router.push('/login'); setSheetOpen(false);}} className="w-full">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Admin Login
+                    </Button>
                   )}
                   </div>
                 </div>
