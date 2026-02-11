@@ -154,59 +154,71 @@ export default function AdminPage() {
       .finally(() => setIsSubmitting(false));
   };
   
-  const onAboutSubmit = (data: AboutFormValues) => {
-    if (!firestore || !storage || !aboutDocRef) return;
+const onAboutSubmit = async (data: AboutFormValues) => {
+    if (!firestore || !aboutDocRef) return;
     setIsSubmitting(true);
 
-    const performUpdate = async () => {
-        let imageUrl = aboutInfo?.profileImageUrl || null;
-        let imagePath = aboutInfo?.profileImageStoragePath || null;
-    
-        if (profileImageFile) {
+    try {
+        // Start with the current image URLs, or empty strings if they don't exist.
+        let imageUrl = aboutInfo?.profileImageUrl || '';
+        let imagePath = aboutInfo?.profileImageStoragePath || '';
+
+        // 1. If a new image file is selected, upload it.
+        if (profileImageFile && storage) {
             const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
             const storageRef = ref(storage, newStoragePath);
             
+            // This is an atomic upload operation.
             const snapshot = await uploadBytes(storageRef, profileImageFile);
+            // This gets the public URL for the newly uploaded file.
             imageUrl = await getDownloadURL(snapshot.ref);
             imagePath = newStoragePath;
-    
-            if (aboutInfo?.profileImageStoragePath) {
-                const oldImageRef = ref(storage, aboutInfo.profileImageStoragePath);
-                deleteObject(oldImageRef).catch(err => {
-                    console.warn("Could not delete old profile image:", err);
-                });
-            }
+            // For maximum reliability, we are no longer deleting the old image.
         }
-    
+
         const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
+        
+        // 2. Construct the complete data object to save to Firestore.
         const dataToSave = {
-            ...data,
+            ...data, // Contains name, tagline, bio1, bio2 from the form
             skills: skillsArray,
             profileImageUrl: imageUrl,
             profileImageStoragePath: imagePath,
         };
-        
-        await setDoc(aboutDocRef, dataToSave, { merge: true });
-    };
 
-    performUpdate().then(() => {
+        // 3. Save the data.
+        await setDoc(aboutDocRef, dataToSave, { merge: true });
+
+        // 4. Update the UI to reflect success.
         toast({ title: "About Info Updated", description: "Your information has been saved." });
-        setProfileImageFile(null);
+        setProfileImageFile(null); // Clear the file input state
         if (fileInputRef.current) {
-            fileInputRef.current.value = "";
+            fileInputRef.current.value = ""; // Clear the file input element
         }
-    }).catch((error: any) => {
+
+    } catch (error: any) {
+        // Handle any errors that occurred during the process.
         console.error("Update failed:", error);
-        toast({ variant: "destructive", title: "Update Failed", description: error.message || "An error occurred." });
-        
+        toast({ 
+            variant: "destructive", 
+            title: "Update Failed", 
+            description: error.message || "An error occurred while saving." 
+        });
+
         if (error.code && !error.code.startsWith('storage/')) {
             const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
-            const dataToSaveForError = { ...aboutInfo, ...data, skills: skillsArray };
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: dataToSaveForError }));
+            const dataForError = { ...data, skills: skillsArray };
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ 
+                path: aboutDocRef.path, 
+                operation: 'update', 
+                requestResourceData: dataForError 
+            }));
         }
-    }).finally(() => {
+
+    } finally {
+        // 5. CRITICAL: Always ensure the submitting state is turned off.
         setIsSubmitting(false);
-    });
+    }
 };
   
   const onServiceSubmit = async (data: ServiceFormValues) => {
