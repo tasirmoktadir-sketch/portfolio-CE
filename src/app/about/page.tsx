@@ -57,7 +57,7 @@ export default function AboutPage() {
               <div className="grid items-center gap-8 md:grid-cols-3">
                 <div className="flex justify-center md:col-span-1">
                     <Image
-                      src={aboutInfo.profileImageUrl || profilePicture?.imageUrl || ''}
+                      src={profilePicture?.imageUrl || ''}
                       alt={aboutInfo.name}
                       width={200}
                       height={200}
