@@ -156,30 +156,21 @@ export default function AdminPage() {
   const onAboutSubmit = async (data: AboutFormValues) => {
     if (!firestore || !storage || !aboutDocRef) return;
     setIsSubmitting(true);
-
+  
     try {
-      const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
-
-      const dataToSave: Partial<AboutInfo> = {
-        name: data.name,
-        tagline: data.tagline,
-        bio1: data.bio1,
-        bio2: data.bio2,
-        skills: skillsArray,
-        profileImageUrl: aboutInfo?.profileImageUrl,
-        profileImageStoragePath: aboutInfo?.profileImageStoragePath,
-      };
-
+      let imageUrl = aboutInfo?.profileImageUrl;
+      let imagePath = aboutInfo?.profileImageStoragePath;
+  
+      // Step 1: If there is a new image file, upload it
       if (profileImageFile) {
         const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
         const storageRef = ref(storage, newStoragePath);
         
         const snapshot = await uploadBytes(storageRef, profileImageFile);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-
-        dataToSave.profileImageUrl = downloadURL;
-        dataToSave.profileImageStoragePath = newStoragePath;
-
+        imageUrl = await getDownloadURL(snapshot.ref);
+        imagePath = newStoragePath;
+  
+        // Step 2: Kick off deletion of the old image, but don't wait for it.
         if (aboutInfo?.profileImageStoragePath) {
           const oldImageRef = ref(storage, aboutInfo.profileImageStoragePath);
           deleteObject(oldImageRef).catch(err => {
@@ -187,22 +178,37 @@ export default function AdminPage() {
           });
         }
       }
-
+  
+      // Step 3: Prepare the data to be saved to Firestore
+      const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
+      const dataToSave: Partial<AboutInfo> = {
+        name: data.name,
+        tagline: data.tagline,
+        bio1: data.bio1,
+        bio2: data.bio2,
+        skills: skillsArray,
+        profileImageUrl: imageUrl,
+        profileImageStoragePath: imagePath,
+      };
+  
+      // Step 4: Save the data to Firestore
       await setDoc(aboutDocRef, dataToSave, { merge: true });
-
+  
       toast({ title: "About Info Updated", description: "Your information has been saved." });
       setProfileImageFile(null);
-
+  
     } catch (error: any) {
       console.error("Update failed:", error);
       toast({ variant: "destructive", title: "Update Failed", description: error.message || "An error occurred." });
       
-      if (!error.code || !error.code.startsWith('storage/')) {
+      // If the error is not a storage error, it might be a Firestore permission error
+      if (error.code && !error.code.startsWith('storage/')) {
         const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
         const dataToSaveForError = { ...aboutInfo, ...data, skills: skillsArray };
         errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: dataToSaveForError }));
       }
     } finally {
+      // Step 5: ALWAYS ensure isSubmitting is set to false
       setIsSubmitting(false);
     }
   };
