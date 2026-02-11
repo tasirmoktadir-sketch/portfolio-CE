@@ -47,7 +47,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-transparent border-b border-border">
-      <div className="container flex h-24 items-center justify-between">
+      <div className="container mx-auto flex h-24 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           <span className="font-semibold uppercase tracking-wider text-foreground text-lg text-glow">
             Cinematic Edge

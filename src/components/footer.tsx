@@ -4,7 +4,7 @@ import Link from 'next/link';
 export function Footer() {
   return (
     <footer className="border-t bg-transparent mt-24">
-      <div className="container flex h-24 items-center justify-between">
+      <div className="container mx-auto flex h-24 items-center justify-between">
         <div>
           <p className="text-sm text-muted-foreground max-w-xs">
             Specializing in immersive narratives and cutting-edge editing
