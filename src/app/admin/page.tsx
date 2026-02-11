@@ -4,7 +4,7 @@
 import * as React from "react";
 import { collection, deleteDoc, doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import { useUser, useFirestore, useStorage, useCollection, useDoc, useFirebase } from "@/firebase";
+import { useUser, useFirestore, useStorage, useCollection, useDoc } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -156,63 +156,63 @@ export default function AdminPage() {
       .finally(() => setIsSubmitting(false));
   };
   
-  const onAboutSubmit = (data: AboutFormValues) => {
+  const onAboutSubmit = async (data: AboutFormValues) => {
     if (!firestore || !storage || !aboutDocRef) return;
     setIsSubmitting(true);
-    setUploadProgress(null);
 
-    const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
-    const currentProfileImageUrl = aboutInfo?.profileImageUrl || "";
-    const currentProfileImageStoragePath = aboutInfo?.profileImageStoragePath || "";
+    try {
+        const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
+        let imageUrl = aboutInfo?.profileImageUrl || "";
+        let storagePath = aboutInfo?.profileImageStoragePath || "";
 
-    const saveData = (imageUrl: string, storagePath: string) => {
-      const aboutData = { ...data, skills: skillsArray, profileImageUrl: imageUrl, profileImageStoragePath: storagePath };
-      setDoc(aboutDocRef, aboutData, { merge: true })
-        .then(() => {
-          toast({ title: "About Info Updated", description: "Your information has been saved." });
-        })
-        .catch(err => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: aboutData }));
-        })
-        .finally(() => {
-          setIsSubmitting(false);
-          setUploadProgress(null);
-          setProfileImageFile(null);
-        });
-    };
-
-    if (profileImageFile) {
-      const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
-      const storageRef = ref(storage, newStoragePath);
-      const uploadTask = uploadBytesResumable(storageRef, profileImageFile);
-
-      uploadTask.on('state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress);
-        },
-        (error) => {
-          console.error("Image upload failed:", error);
-          toast({ variant: "destructive", title: "Upload Error", description: "Could not upload profile image." });
-          setIsSubmitting(false);
-          setUploadProgress(null);
-        },
-        () => { // Completion function
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            // Delete old image if it exists
-            if (currentProfileImageStoragePath) {
-               deleteObject(ref(storage, currentProfileImageStoragePath)).catch(err => console.error("Could not delete old profile image", err));
-            }
-            saveData(downloadURL, newStoragePath);
-          }).catch((error) => {
-            toast({ variant: "destructive", title: "Error", description: "Could not get image URL after upload." });
-            setIsSubmitting(false);
-            setUploadProgress(null);
-          });
+        if (profileImageFile) {
+            setUploadProgress(0);
+            const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
+            const storageRef = ref(storage, newStoragePath);
+            const uploadTask = uploadBytesResumable(storageRef, profileImageFile);
+            
+            await new Promise<void>((resolve, reject) => {
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        setUploadProgress(() => progress);
+                    },
+                    (error) => {
+                        reject(error);
+                    },
+                    async () => {
+                        try {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            if (aboutInfo?.profileImageStoragePath) {
+                                await deleteObject(ref(storage, aboutInfo.profileImageStoragePath)).catch(err => console.warn("Old image deletion failed", err));
+                            }
+                            imageUrl = downloadURL;
+                            storagePath = newStoragePath;
+                            resolve();
+                        } catch (e) {
+                            reject(e);
+                        }
+                    }
+                );
+            });
         }
-      );
-    } else {
-      saveData(currentProfileImageUrl, currentProfileImageStoragePath);
+        
+        const aboutData = { ...data, skills: skillsArray, profileImageUrl: imageUrl, profileImageStoragePath: storagePath };
+        await setDoc(aboutDocRef, aboutData, { merge: true });
+
+        toast({ title: "About Info Updated", description: "Your information has been saved." });
+
+    } catch (error: any) {
+        console.error("Submission failed:", error);
+        toast({ variant: "destructive", title: "Error", description: error.message || "An error occurred while saving." });
+        if (error.name !== 'FirebaseError') {
+             const aboutData = { ...data, skills: data.skills.split(',').map(s => s.trim()).filter(Boolean) };
+             errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: aboutData }));
+        }
+    } finally {
+        setIsSubmitting(false);
+        setUploadProgress(null);
+        setProfileImageFile(null);
     }
   };
   
@@ -318,7 +318,7 @@ export default function AdminPage() {
                 <div><Label>Bio Paragraph 1</Label><Textarea {...aboutForm.register("bio1")} /></div>
                 <div><Label>Bio Paragraph 2</Label><Textarea {...aboutForm.register("bio2")} /></div>
                 <div><Label>Skills (comma-separated)</Label><Textarea {...aboutForm.register("skills")} /></div>
-                <div><Label>Profile Picture</Label><Input type="file" accept="image/*" onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)} /></div>
+                <div><Label>Profile Picture</Label><Input type="file" accept="image/*" onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)} disabled={isSubmitting}/></div>
                 {isSubmitting && uploadProgress !== null && <Progress value={uploadProgress} className="w-full" />}
                 <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? (uploadProgress !== null ? `Uploading ${Math.round(uploadProgress!)}%` : 'Saving...') : 'Save About Info'}
@@ -395,5 +395,7 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
 
     
