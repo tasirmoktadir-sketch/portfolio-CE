@@ -63,6 +63,7 @@ export default function AdminPage() {
   const firestore = useFirestore();
   const storage = useStorage();
   const router = useRouter();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Data hooks
   const videoProjectsCollection = firestore ? collection(firestore, "videoProjects") : null;
@@ -153,65 +154,60 @@ export default function AdminPage() {
       .finally(() => setIsSubmitting(false));
   };
   
-  const onAboutSubmit = async (data: AboutFormValues) => {
+  const onAboutSubmit = (data: AboutFormValues) => {
     if (!firestore || !storage || !aboutDocRef) return;
     setIsSubmitting(true);
-  
-    try {
-      let imageUrl = aboutInfo?.profileImageUrl;
-      let imagePath = aboutInfo?.profileImageStoragePath;
-  
-      // Step 1: If there is a new image file, upload it
-      if (profileImageFile) {
-        const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
-        const storageRef = ref(storage, newStoragePath);
-        
-        const snapshot = await uploadBytes(storageRef, profileImageFile);
-        imageUrl = await getDownloadURL(snapshot.ref);
-        imagePath = newStoragePath;
-  
-        // Step 2: Kick off deletion of the old image, but don't wait for it.
-        if (aboutInfo?.profileImageStoragePath) {
-          const oldImageRef = ref(storage, aboutInfo.profileImageStoragePath);
-          deleteObject(oldImageRef).catch(err => {
-            console.warn("Could not delete old profile image:", err);
-          });
+
+    const performUpdate = async () => {
+        let imageUrl = aboutInfo?.profileImageUrl || null;
+        let imagePath = aboutInfo?.profileImageStoragePath || null;
+    
+        if (profileImageFile) {
+            const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
+            const storageRef = ref(storage, newStoragePath);
+            
+            const snapshot = await uploadBytes(storageRef, profileImageFile);
+            imageUrl = await getDownloadURL(snapshot.ref);
+            imagePath = newStoragePath;
+    
+            if (aboutInfo?.profileImageStoragePath) {
+                const oldImageRef = ref(storage, aboutInfo.profileImageStoragePath);
+                deleteObject(oldImageRef).catch(err => {
+                    console.warn("Could not delete old profile image:", err);
+                });
+            }
         }
-      }
-  
-      // Step 3: Prepare the data to be saved to Firestore
-      const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
-      const dataToSave: Partial<AboutInfo> = {
-        name: data.name,
-        tagline: data.tagline,
-        bio1: data.bio1,
-        bio2: data.bio2,
-        skills: skillsArray,
-        profileImageUrl: imageUrl,
-        profileImageStoragePath: imagePath,
-      };
-  
-      // Step 4: Save the data to Firestore
-      await setDoc(aboutDocRef, dataToSave, { merge: true });
-  
-      toast({ title: "About Info Updated", description: "Your information has been saved." });
-      setProfileImageFile(null);
-  
-    } catch (error: any) {
-      console.error("Update failed:", error);
-      toast({ variant: "destructive", title: "Update Failed", description: error.message || "An error occurred." });
-      
-      // If the error is not a storage error, it might be a Firestore permission error
-      if (error.code && !error.code.startsWith('storage/')) {
+    
         const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
-        const dataToSaveForError = { ...aboutInfo, ...data, skills: skillsArray };
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: dataToSaveForError }));
-      }
-    } finally {
-      // Step 5: ALWAYS ensure isSubmitting is set to false
-      setIsSubmitting(false);
-    }
-  };
+        const dataToSave = {
+            ...data,
+            skills: skillsArray,
+            profileImageUrl: imageUrl,
+            profileImageStoragePath: imagePath,
+        };
+        
+        await setDoc(aboutDocRef, dataToSave, { merge: true });
+    };
+
+    performUpdate().then(() => {
+        toast({ title: "About Info Updated", description: "Your information has been saved." });
+        setProfileImageFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    }).catch((error: any) => {
+        console.error("Update failed:", error);
+        toast({ variant: "destructive", title: "Update Failed", description: error.message || "An error occurred." });
+        
+        if (error.code && !error.code.startsWith('storage/')) {
+            const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
+            const dataToSaveForError = { ...aboutInfo, ...data, skills: skillsArray };
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: dataToSaveForError }));
+        }
+    }).finally(() => {
+        setIsSubmitting(false);
+    });
+};
   
   const onServiceSubmit = async (data: ServiceFormValues) => {
       if (!firestore) return;
@@ -315,7 +311,7 @@ export default function AdminPage() {
                 <div><Label>Bio Paragraph 1</Label><Textarea {...aboutForm.register("bio1")} /></div>
                 <div><Label>Bio Paragraph 2</Label><Textarea {...aboutForm.register("bio2")} /></div>
                 <div><Label>Skills (comma-separated)</Label><Textarea {...aboutForm.register("skills")} /></div>
-                <div><Label>Profile Picture</Label><Input type="file" accept="image/*" onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)} disabled={isSubmitting}/></div>
+                <div><Label>Profile Picture</Label><Input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)} disabled={isSubmitting}/></div>
                 <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? 'Saving...' : 'Save About Info'}
                 </Button>
