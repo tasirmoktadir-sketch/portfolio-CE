@@ -157,47 +157,53 @@ export default function AdminPage() {
     if (!firestore || !storage || !aboutDocRef) return;
     setIsSubmitting(true);
 
-    const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
-    
-    const dataToSave: Partial<AboutInfo> & { skills: string[] } & AboutFormValues = {
-        ...aboutInfo,
-        ...data,
-        skills: skillsArray,
-    };
-
     try {
-        if (profileImageFile) {
-            const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
-            const storageRef = ref(storage, newStoragePath);
-            
-            const snapshot = await uploadBytes(storageRef, profileImageFile);
-            const downloadURL = await getDownloadURL(snapshot.ref);
+      const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
 
-            if (aboutInfo?.profileImageStoragePath) {
-                const oldImageRef = ref(storage, aboutInfo.profileImageStoragePath);
-                await deleteObject(oldImageRef).catch(err => {
-                    console.warn("Could not delete old profile image:", err)
-                });
-            }
+      const dataToSave: Partial<AboutInfo> = {
+        name: data.name,
+        tagline: data.tagline,
+        bio1: data.bio1,
+        bio2: data.bio2,
+        skills: skillsArray,
+        profileImageUrl: aboutInfo?.profileImageUrl,
+        profileImageStoragePath: aboutInfo?.profileImageStoragePath,
+      };
 
-            dataToSave.profileImageUrl = downloadURL;
-            dataToSave.profileImageStoragePath = newStoragePath;
+      if (profileImageFile) {
+        const newStoragePath = `images/profile/${Date.now()}_${profileImageFile.name}`;
+        const storageRef = ref(storage, newStoragePath);
+        
+        const snapshot = await uploadBytes(storageRef, profileImageFile);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        dataToSave.profileImageUrl = downloadURL;
+        dataToSave.profileImageStoragePath = newStoragePath;
+
+        if (aboutInfo?.profileImageStoragePath) {
+          const oldImageRef = ref(storage, aboutInfo.profileImageStoragePath);
+          deleteObject(oldImageRef).catch(err => {
+            console.warn("Could not delete old profile image:", err);
+          });
         }
+      }
 
-        await setDoc(aboutDocRef, dataToSave, { merge: true });
-        toast({ title: "About Info Updated", description: "Your information has been saved." });
-        setProfileImageFile(null);
+      await setDoc(aboutDocRef, dataToSave, { merge: true });
+
+      toast({ title: "About Info Updated", description: "Your information has been saved." });
+      setProfileImageFile(null);
 
     } catch (error: any) {
-        console.error("Update failed:", error);
-        toast({ variant: "destructive", title: "Update Failed", description: error.message || "An error occurred." });
-        
-        if (!error.code || !error.code.startsWith('storage/')) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: dataToSave }));
-        }
-
+      console.error("Update failed:", error);
+      toast({ variant: "destructive", title: "Update Failed", description: error.message || "An error occurred." });
+      
+      if (!error.code || !error.code.startsWith('storage/')) {
+        const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
+        const dataToSaveForError = { ...aboutInfo, ...data, skills: skillsArray };
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: aboutDocRef.path, operation: 'update', requestResourceData: dataToSaveForError }));
+      }
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
   
@@ -379,5 +385,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
-    
