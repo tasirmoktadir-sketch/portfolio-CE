@@ -55,7 +55,7 @@ export default function AboutPage() {
               <div className="grid items-center gap-8 md:grid-cols-3">
                 <div className="flex justify-center md:col-span-1">
                     <Image
-                      src={aboutInfo.profileImageUrl || 'https://placehold.co/200x200'}
+                      src={aboutInfo.profileImageUrl || 'https://storage.googleapis.com/maker-studio-media/user/jGZFRpQv1j8d9A0b5t8j/projects/eHn8s8jK8s4h4T6t6k3m/generations/1723223018445_0_0.jpeg'}
                       alt={aboutInfo.name}
                       width={200}
                       height={200}
