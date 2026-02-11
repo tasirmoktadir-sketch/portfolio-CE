@@ -156,11 +156,10 @@ export default function AdminPage() {
       .finally(() => setIsSubmitting(false));
   };
   
-  const onAboutSubmit = async (data: AboutFormValues) => {
+  const onAboutSubmit = (data: AboutFormValues) => {
     if (!firestore || !storage || !aboutDocRef) return;
     setIsSubmitting(true);
     setUploadProgress(null);
-
 
     const skillsArray = data.skills.split(',').map(s => s.trim()).filter(Boolean);
     const currentProfileImageUrl = aboutInfo?.profileImageUrl || "";
@@ -198,18 +197,18 @@ export default function AdminPage() {
           setIsSubmitting(false);
           setUploadProgress(null);
         },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        () => { // Completion function
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+            // Delete old image if it exists
             if (currentProfileImageStoragePath) {
-              deleteObject(ref(storage, currentProfileImageStoragePath)).catch(err => console.error("Could not delete old profile image", err));
+               deleteObject(ref(storage, currentProfileImageStoragePath)).catch(err => console.error("Could not delete old profile image", err));
             }
             saveData(downloadURL, newStoragePath);
-          } catch (error) {
+          }).catch((error) => {
             toast({ variant: "destructive", title: "Error", description: "Could not get image URL after upload." });
             setIsSubmitting(false);
             setUploadProgress(null);
-          }
+          });
         }
       );
     } else {
@@ -396,3 +395,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
+    
