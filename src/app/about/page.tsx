@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDoc, useFirestore } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PlaceHolderImages } from "@/lib/placeholder-images";
 
 type AboutInfo = {
   name: string;
@@ -20,6 +21,7 @@ export default function AboutPage() {
   const firestore = useFirestore();
   const aboutDocRef = firestore ? doc(firestore, "siteContent", "about") : null;
   const { data: aboutInfo, loading } = useDoc<AboutInfo>(aboutDocRef);
+  const profilePicture = PlaceHolderImages.find(p => p.id === 'profile-picture');
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12 md:px-6">
@@ -55,11 +57,12 @@ export default function AboutPage() {
               <div className="grid items-center gap-8 md:grid-cols-3">
                 <div className="flex justify-center md:col-span-1">
                     <Image
-                      src={aboutInfo.profileImageUrl || 'https://storage.googleapis.com/maker-studio-media/user/jGZFRpQv1j8d9A0b5t8j/projects/eHn8s8jK8s4h4T6t6k3m/generations/1723223018445_0_0.jpeg'}
+                      src={aboutInfo.profileImageUrl || profilePicture?.imageUrl || ''}
                       alt={aboutInfo.name}
                       width={200}
                       height={200}
                       className="rounded-full object-cover aspect-square shadow-md"
+                      data-ai-hint={profilePicture?.imageHint}
                     />
                 </div>
                 <div className="md:col-span-2 space-y-4">
