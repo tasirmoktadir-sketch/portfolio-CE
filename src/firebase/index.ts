@@ -13,7 +13,7 @@ import { useMemoFirebase } from './use-memo-firebase';
 
 export function initializeFirebase() {
   if (!firebaseConfig.apiKey) {
-    throw new Error('Firebase API key is missing. Please make sure you have a .env.local file with your Firebase project credentials, and that you have restarted the development server.');
+    throw new Error('Firebase configuration is missing. If you are the administrator, please check your environment variables (e.g., NEXT_PUBLIC_FIREBASE_API_KEY).');
   }
   const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   const auth = getAuth(app);
